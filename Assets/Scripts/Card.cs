@@ -1,29 +1,72 @@
 using System.Collections.Generic;
 using UnityEngine;
-public class Card : MonoBehaviour
+using UnityEngine.EventSystems;
+public class Card : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    private RectTransform rectTransform;
+    private Camera meinCampf;
+    private CanvasGroup canvasGroup;
+    private Canvas canvas;
+    private Transform originalParent;
+    private Vector3 offset;
+    private Vector3 targetPosition;
+    private bool isDragging = false;
+
+    private float smoothSpeed = 15f;
+
     CardType type;
     BoxCollider2D col;
     SpriteRenderer sr;
-    Vector3 startingPos;
-    Vector3 playedPos;
-    Vector3 mousePositionOffset;
-    List<Collider2D> results;
-
 
     int index;
     int vialCost;
     bool colliding = false;
     private void Awake()
     {
-        sr = GetComponent<SpriteRenderer>();
+        meinCampf = Camera.main;
+        rectTransform = GetComponent<RectTransform>();
+        canvasGroup = GetComponent<CanvasGroup>();
+        canvas = GetComponentInParent<Canvas>();
         col = GetComponent<BoxCollider2D>();
-        results = new List<Collider2D>();
+        sr = GetComponent<SpriteRenderer>();
     }
 
-    Vector3 GetMouseWorldPosition()
+
+    public void OnBeginDrag(PointerEventData eventData)
     {
-        return Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        originalParent = transform.parent;
+
+        transform.SetParent(canvas.transform, true);
+        transform.SetAsLastSibling();
+
+        canvasGroup.blocksRaycasts = false;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        targetPosition = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        canvasGroup.blocksRaycasts = true;
+
+        GameObject objectUnderMouse = eventData.pointerCurrentRaycast.gameObject;
+
+        if (objectUnderMouse != null && objectUnderMouse.name == "PlayCardSpot")
+        {
+            transform.SetParent(objectUnderMouse.transform);
+        }
+        else
+        {
+            transform.SetParent(originalParent);
+        }
+
+        // Reset crítico para que la carta no se pierda en el espacio
+        transform.localPosition = Vector3.zero;
+        // Forzamos Z a 0 para que sea visible
+        RectTransform rt = GetComponent<RectTransform>();
+        rt.anchoredPosition3D = new Vector3(rt.anchoredPosition3D.x, rt.anchoredPosition3D.y, 0);
     }
 
     void LoadCardSprite()
@@ -55,33 +98,5 @@ public class Card : MonoBehaviour
         }
     }
 
-    private void OnMouseDown()
-    {
-        if(!colliding) startingPos = transform.position;
-        mousePositionOffset = transform.position - GetMouseWorldPosition();
-    }
-
-    private void OnMouseDrag()
-    {
-        transform.position = Vector2.Lerp(transform.position, GetMouseWorldPosition() + mousePositionOffset, 12 * Time.deltaTime);
-        if (!colliding && col.Overlap(results) > 0 ) // Si detecta mas de 0 colisiones es porque esta detectando el Playzone
-        {
-            transform.localScale *= 1.1f;
-            HandManager.inst.playedCards.Add(this);
-            colliding = true;
-        }
-        else if(colliding && col.Overlap(results).Equals(0))
-        {
-            transform.localScale /= 1.1f;
-            HandManager.inst.playedCards.Remove(this);
-            colliding = false;
-        }
-    }
-
-    private void OnMouseUp()
-    {
-        //TODO: que te puedas arrepentir XD
-        if(!colliding) transform.position = startingPos; // Si no detecta ninguna colision, volvemos a la mano
-    }
-
+    
 }

@@ -2,19 +2,24 @@ using UnityEngine;
 
 public class PlayCardSpot : MonoBehaviour
 {
-    private void OnCollisionEnter2D(Collision2D collision)
+    public float spacing = 1.5f;
+
+    private void OnTransformChildrenChanged()
     {
-        if(collision.gameObject.tag.Equals("Card"))
-        {
-            Debug.Log("entro cartit");
-        }
+        OrganizeCards();
     }
 
-    private void OnCollisionExit2D(Collision2D collision)
+    public void OrganizeCards()
     {
-        if (collision.gameObject.tag.Equals("Card"))
+        int childCount = transform.childCount;
+        if (childCount == 0) return;
+        float startX = -((childCount - 1) * spacing) / 2f;
+
+        for (int i = 0; i < childCount; i++)
         {
-            Debug.Log("salio cartit");
+            Transform child = transform.GetChild(i);
+            Vector3 targetPos = new Vector3(startX + (i * spacing), 0, 0);
+            child.localPosition = targetPos;
         }
     }
 }

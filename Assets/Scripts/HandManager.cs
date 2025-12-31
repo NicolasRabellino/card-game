@@ -14,9 +14,10 @@ public class HandManager : MonoBehaviour
 
     public void PlayHand()
     {
-        for (int i = 0; i < playedCards.Count; i++)
+        Card[] cardsInPlayZone = GetComponentsInChildren<Card>();
+        foreach (Card card in cardsInPlayZone)
         {
-            Debug.Log($"played card: {playedCards[i]}");
+            // hacer algo con la carta
         }
     }
     
