@@ -8,8 +8,8 @@ public class Card : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHand
     private CanvasGroup canvasGroup;
     private Canvas canvas;
     private Transform originalParent;
-    private Vector3 offset;
-    private Vector3 targetPosition;
+    private Vector2 targetAnchoredPosition;
+    private Vector2 ogAnchoredPosition;
     private bool isDragging = false;
 
     private float smoothSpeed = 15f;
@@ -31,42 +31,47 @@ public class Card : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHand
         sr = GetComponent<SpriteRenderer>();
     }
 
+    private void Update()
+    {
+        if(isDragging)
+        {
+            rectTransform.anchoredPosition = Vector2.Lerp(
+                rectTransform.anchoredPosition,
+                targetAnchoredPosition,
+                smoothSpeed * Time.deltaTime);
+        }
+    }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         originalParent = transform.parent;
-
-        transform.SetParent(canvas.transform, true);
-        transform.SetAsLastSibling();
-
+        ogAnchoredPosition = rectTransform.anchoredPosition;
         canvasGroup.blocksRaycasts = false;
+        transform.SetParent(canvas.transform);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        targetPosition = eventData.position;
+        targetAnchoredPosition += eventData.delta / canvas.scaleFactor;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        isDragging = false;
         canvasGroup.blocksRaycasts = true;
-
+        
         GameObject objectUnderMouse = eventData.pointerCurrentRaycast.gameObject;
-
+        
         if (objectUnderMouse != null && objectUnderMouse.name == "PlayCardSpot")
         {
             transform.SetParent(objectUnderMouse.transform);
+            rectTransform.localPosition = Vector3.zero;
         }
         else
         {
             transform.SetParent(originalParent);
+            rectTransform.anchoredPosition = ogAnchoredPosition;
         }
-
-        // Reset crítico para que la carta no se pierda en el espacio
-        transform.localPosition = Vector3.zero;
-        // Forzamos Z a 0 para que sea visible
-        RectTransform rt = GetComponent<RectTransform>();
-        rt.anchoredPosition3D = new Vector3(rt.anchoredPosition3D.x, rt.anchoredPosition3D.y, 0);
     }
 
     void LoadCardSprite()
